@@ -37,7 +37,7 @@ export const agentCommand = new Command("agent")
         if (!command) {
           return;
         }
-        console.log("ai returns this ====> \n", command)
+        console.log("ai returns this ====> \n", command);
         exec(command, (error, stdout, stderr) => {
           if (error) {
             console.error(`Execution error: ${error.message}`);
@@ -55,6 +55,14 @@ export const agentCommand = new Command("agent")
     }
   });
 
-// read file
-// write file
-// edit file
+// read file  - done
+// write file - done
+// edit file  - done
+
+// agent loop =>
+// systemPrompt: these are the tools we have: {} , respond with the set of tools we need to use in an object [{toolName: "exec", inputs: {command: "cat src/indes.ts"} , responseAcceptable: "yes", runningEvent:"...running terminal command to read file", response: "//prompt again to the loop"}, {toolName: "summarize", inputs:{content: "----"}, responseAcceptable: "yes", runningEvent:"...running terminal command to read file", response: "//prompt again to the loop }]
+// userPrompt: summarize this file "src/x.json"
+// 1. give me a plan of tool we need to use, from these existing tools in a format
+// 2. run through the format give the reponse to AI back, he will respond back updating the format
+// => cat x.json => run it in exec => get content send to summarize tool
+// 3. untill whole formats responseAcceptable === "yes" loop will be running, and final response will be console logged
