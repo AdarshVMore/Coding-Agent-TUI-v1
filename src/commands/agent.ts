@@ -10,13 +10,12 @@ export const agentCommand = new Command("agent")
   .description("Runs the agent")
   .option("-p, --prompt <prompt>", "prompt", "")
   .action(async (prompt) => {
-    const apiKey = await db.active.findMany({
+    const data = await db.active.findMany({
       where: {
         isActive: true,
       },
     });
-    console.log("API ", apiKey);
-    const ai = new GoogleGenAI({ apiKey: apiKey[1].apiKey });
+    const ai = new GoogleGenAI({ apiKey: data[0].apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: `you are supposed to give only 1 terminal command in return on what is been asked for nothing extra in return only the command : userPrompt:${prompt}`,
@@ -38,6 +37,7 @@ export const agentCommand = new Command("agent")
         if (!command) {
           return;
         }
+        console.log("ai returns this ====> \n", command)
         exec(command, (error, stdout, stderr) => {
           if (error) {
             console.error(`Execution error: ${error.message}`);
@@ -53,6 +53,8 @@ export const agentCommand = new Command("agent")
         });
       }
     }
-
-    // console.log(response.text);
   });
+
+// read file
+// write file
+// edit file

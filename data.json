@@ -1,0 +1,7 @@
+{
+  "providers": [
+    { "name": "OpenAI", "models": ["GPT-4o", "GPT-4-turbo"] },
+    { "name": "Anthropic", "models": ["Claude-3.5-Sonnet", "Claude-3-Opus"] },
+    { "name": "Google", "models": ["Gemini-1.5-Pro", "Gemini-1.5-Flash"] }
+  ]
+}
