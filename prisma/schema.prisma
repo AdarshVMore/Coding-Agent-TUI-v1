@@ -14,6 +14,7 @@ datasource db {
 
 model active {
   id            String        @default(cuid())  @id
-  provider      String
+  provider      String        @unique
   apiKey        String
+  isActive      Boolean
 }

@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { models } from "../providers";
+import { models } from "../agent/providers-data";
 
 export const modelsCommand = new Command("models")
 .argument('<provider>')
@@ -7,7 +7,8 @@ export const modelsCommand = new Command("models")
   .option('-m, --model <modelName>', 'name of the model', 'all')
   .action((provider) => {
     console.log("Listing models...");
-    console.log(models)
-    const providers = models.provider
-    console.log(providers)
+    const providers = models[provider]
+    for(let provider of providers){
+      console.log(provider)
+    }
 });

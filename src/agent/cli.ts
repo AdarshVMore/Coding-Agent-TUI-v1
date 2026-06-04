@@ -1,7 +1,7 @@
 import { program } from 'commander';
-import { modelsCommand } from './commands/models';
-import { agentCommand } from './commands/agent';
-import { providerCommand } from './commands/providers';
+import { modelsCommand } from '../commands/models';
+import { agentCommand } from '../commands/agent';
+import { providerCommand } from '../commands/providers';
 
 program
   .name('opencode')

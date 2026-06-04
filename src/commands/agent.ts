@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { GoogleGenAI } from "@google/genai";
 import { exec } from "child_process";
-import db from "../prismaIndex";
+import db from "../prisma-init/prismaIndex";
 
 async function main() {}
 
@@ -12,7 +12,7 @@ export const agentCommand = new Command("agent")
   .action(async (prompt) => {
     const apiKey = await db.active.findMany({
       where: {
-        provider: "openai",
+        isActive: true,
       },
     });
     console.log("API ", apiKey);

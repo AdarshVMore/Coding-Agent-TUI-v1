@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Command } from "commander";
 let apiKey;
-import db from "../../prismaIndex";
+import db from "../../prisma-init/prismaIndex";
 
 export const setProviderCommand = new Command("set")
   .argument("<provider>")
@@ -16,10 +16,18 @@ export const setProviderCommand = new Command("set")
       const data: any = await axios.post("http://localhost:3000/api/set", {
         provider: provider,
       });
+      let x
       apiKey = data.data.apiKey;
-      const x = await db.active.create({
-        data: { provider: provider, apiKey: apiKey },
+      const y = await db.active.update({
+        where: { provider: provider },
+        data: { apiKey: apiKey },
       });
+      if (!y) {
+        x = await db.active.create({
+          data: { provider: provider, apiKey: apiKey, isActive: true },
+        });
+      }
+
       console.log("x = ", x);
       console.log(
         "set provider to ",
