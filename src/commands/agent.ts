@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import { GoogleGenAI } from "@google/genai";
-import { exec } from "child_process";
 import db from "../prisma-init/prismaIndex";
+import { toolFunctionCallLoop } from "../agent/toolCallLoop";
+import tools from "../agent/tools.json";
 
 async function main() {}
 
@@ -15,10 +16,15 @@ export const agentCommand = new Command("agent")
         isActive: true,
       },
     });
+
     const ai = new GoogleGenAI({ apiKey: data[0].apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: `you are supposed to give only 1 terminal command in return on what is been asked for nothing extra in return only the command : userPrompt:${prompt}`,
+      contents: prompt,
+      config: {
+        systemInstruction:
+          "these are the tools we have: {} , respond with the set of tools we need to use in an object [{toolName: exec, inputs: {command: cat src/indes.ts} , responseAcceptable: yes, runningEvent:...running terminal command to read file, response://prompt again to the loop}, {toolName: summarize, inputs:{content: ----}, responseAcceptable: yes, runningEvent:...running terminal command to read file, response: //prompt again to the loop }]",
+      },
     });
 
     const texts = response.candidates;
@@ -33,24 +39,11 @@ export const agentCommand = new Command("agent")
         return;
       }
       for (let part of content) {
-        const command = part.text;
-        if (!command) {
+        const response = part.text;
+        if (!response) {
           return;
         }
-        console.log("ai returns this ====> \n", command);
-        exec(command, (error, stdout, stderr) => {
-          if (error) {
-            console.error(`Execution error: ${error.message}`);
-            return;
-          }
-
-          if (stderr) {
-            console.error(`Standard error: ${stderr}`);
-            return;
-          }
-
-          console.log(`Output:\n${stdout}`);
-        });
+        toolFunctionCallLoop(JSON.parse(response));
       }
     }
   });
@@ -66,3 +59,10 @@ export const agentCommand = new Command("agent")
 // 2. run through the format give the reponse to AI back, he will respond back updating the format
 // => cat x.json => run it in exec => get content send to summarize tool
 // 3. untill whole formats responseAcceptable === "yes" loop will be running, and final response will be console logged
+
+// better workflow to build
+// 1. user says agent <prompt> ,
+// CLI asks for provider [a dropdown] ,
+// if API_KEY ? select Model / auto-select , else enter API KEY ,
+// start AgentLoop [give streams of response with "runningEvent"]
+// 2. spawns a docker continer with KVM + Quemu to create a Sandbox for some execution of tasks provided

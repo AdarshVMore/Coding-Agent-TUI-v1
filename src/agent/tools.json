@@ -1,0 +1,41 @@
+{
+  "availableTools": [
+    {
+      "name": "bashExec",
+      "description": "Execute terminal commands",
+      "parameters": {
+        "command": "string"
+      }
+    },
+    {
+      "name": "summarize",
+      "description": "Summarize text content",
+      "parameters": {
+        "content": "string"
+      }
+    },
+    {
+      "name": "webSearch",
+      "description": "Search the web for external information",
+      "parameters": {
+        "query": "string"
+      }
+    },
+    {
+      "name": "editFile",
+      "description": "Edit a file",
+      "parameters": {
+        "filePath": "string",
+        "edits": "string"
+      }
+    }
+  ],
+  "instructions": {
+    "toolUsage": "Only call tools when necessary. Prefer reading files before editing them.",
+    "responseFormat": {
+      "toolName": "string",
+      "inputs": "object",
+      "reasoning": "string"
+    }
+  }
+}
