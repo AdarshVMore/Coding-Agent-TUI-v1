@@ -5,11 +5,20 @@ import { bashExec, summarize, webSearch, editFile } from "./tools.js";
 async function executeToolCall(singleToolCall: AgentLoopToolCall[number]) {
   switch (singleToolCall.toolName) {
     case "exec":
-      return bashExec(singleToolCall.inputs.command, singleToolCall.runningEvent);
+      return bashExec(
+        singleToolCall.inputs.command,
+        singleToolCall.runningEvent,
+      );
     case "summarize":
-      return summarize(singleToolCall.inputs.content, singleToolCall.runningEvent);
+      return summarize(
+        singleToolCall.inputs.content,
+        singleToolCall.runningEvent,
+      );
     case "web_search":
-      return webSearch(singleToolCall.inputs.query, singleToolCall.runningEvent);
+      return webSearch(
+        singleToolCall.inputs.query,
+        singleToolCall.runningEvent,
+      );
     case "edit":
       return editFile(
         singleToolCall.inputs.filePath,
@@ -19,14 +28,21 @@ async function executeToolCall(singleToolCall: AgentLoopToolCall[number]) {
   }
 }
 
-export async function toolFunctionCallLoop(response: AgentLoopToolCall, apiKey: string) {
+export async function toolFunctionCallLoop(
+  response: AgentLoopToolCall,
+  apiKey: string,
+) {
   let finalResponse;
   for (let singleToolCall of response) {
     if (singleToolCall.responseAcceptable === "no") {
       const currentRes = await executeToolCall(singleToolCall);
-      finalResponse = await aiCall(`${singleToolCall.response}\n\nTool output:\n${currentRes}`, apiKey);
+      finalResponse = await aiCall(
+        `${singleToolCall.response}\n\nTool output:\n${currentRes}`,
+        apiKey,
+      );
     }
   }
+
   console.log(finalResponse);
 }
 // this syntax in interesting => an object of key:string and value:function => function having [params] and in execution it executes another function based on that params

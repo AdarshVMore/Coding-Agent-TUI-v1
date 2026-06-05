@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import tools from "./tools.json"
+import tools from "./tools.json";
 import { AgentLoopToolCall } from "../types";
 
 const sysPrompt = `You are an autonomous coding agent.
@@ -8,31 +8,11 @@ const sysPrompt = `You are an autonomous coding agent.
     
     You have access to the following tools:
     
-    {{TOOLS_JSON}}
-    
-    Each tool contains:
-    
-    * toolName
-    * description
-    * required parameters
-    
-    ## Rules
-    
-    1. Think step by step.
-    2. Never assume file contents.
-    3. Always inspect files before editing them.
-    4. Prefer reading files before making changes.
-    5. Use multiple tool calls when needed.
-    6. Only use tools that exist in the provided tool list.
-    7. If information is missing, use tools to gather it.
-    8. Do NOT explain your reasoning.
-    9. Respond ONLY with valid JSON.
-    10. Never wrap the response in markdown.
-    11. Never return prose outside the JSON structure.
-    
+    ${tools}    
+
     ## Response Format
 
-    Return an array of tool calls.
+    Return an array of tool calls required for entire reequest has.
     
     Schema:
     
@@ -42,7 +22,7 @@ const sysPrompt = `You are an autonomous coding agent.
     "inputs": {},
     "responseAcceptable": "yes" | "no",
     "runningEvent": "short status message",
-    "response": "what should be sent back into the next loop"
+    "response": "what should be sent back into the next tool call"
     }
     ]
     
@@ -78,36 +58,37 @@ const sysPrompt = `You are an autonomous coding agent.
     }
     ]
     
-    ### Example 2: Edit a file
+    ### Example 2: Summarize a file
     
     User request:
-    "Fix the typo in src/index.ts"
+    "Summarize the code present in file src/index.ts"
     
     Response:
     
     [
-    {
-    "toolName": "exec",
-    "inputs": {
-    "command": "cat src/index.ts"
-    },
-    "responseAcceptable": "no",
-    "runningEvent": "Reading file before editing",
-    "response": "Review file content and prepare edit."
-    },
-    {
-    "toolName": "edit",
-    "inputs": {
-    "filePath": "src/index.ts",
-    "edits": "Replace 'indes' with 'index'"
-    },
-    "responseAcceptable": "yes",
-    "runningEvent": "Applying file edits",
-    "response": "Summarize changes made."
-    }
+        {
+            "toolName": "exec",
+            "inputs": {
+                "command": "cat src/index.ts"
+            },
+            "responseAcceptable": "no",
+                "runningEvent": "Reading file before editing",
+            "response": "here is the content in the file {} summarize it"
+        },
+        {
+            "toolName": "summarize",
+            "inputs": {
+                "content": "summarize this content"
+            },
+            "responseAcceptable": "yes",
+            "runningEvent": "Applying file edits",
+            "response": "Summarized content"
+        }
     ]
+
+    After every loop or an AI Call check which response is acceptable and in next response mark that tools responseAcceptable as "yes"
     
-    Now solve the user's request.`;
+Now solve the user's request.`;
 
 function getJsonText(text: string) {
   const trimmed = text.trim();
@@ -167,7 +148,10 @@ function parseToolCalls(text: string): AgentLoopToolCall | undefined {
     const parsed: unknown = JSON.parse(getJsonText(text));
 
     if (!Array.isArray(parsed) || !parsed.every(isToolCall)) {
-      console.error("AI response JSON did not match the tool-call schema:", parsed);
+      console.error(
+        "AI response JSON did not match the tool-call schema:",
+        parsed,
+      );
       return;
     }
 
@@ -179,17 +163,17 @@ function parseToolCalls(text: string): AgentLoopToolCall | undefined {
 
 export async function aiCall(prompt: string, apiKey: string) {
   // actual params needed => provider:string, model:string, apiKey:string
-  try{console.log("================================================ calling gemini with given prompt =================================================== \n", prompt)
-  const ai = new GoogleGenAI({ apiKey: apiKey });
-  const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
-    contents: `these are all the tool we have: ${tools}, ${prompt}`,
-    config: {
-      systemInstruction: sysPrompt,
-    },
-  });
+  try {
+    const ai = new GoogleGenAI({ apiKey: apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: `these are all the tool we have: ${tools}, ${prompt}`,
+      config: {
+        systemInstruction: sysPrompt,
+      },
+    });
 
-  const texts = response.candidates;
+    const texts = response.candidates;
 
     if (!texts) {
       return;
@@ -205,11 +189,11 @@ export async function aiCall(prompt: string, apiKey: string) {
         if (!response) {
           return;
         }
-        console.log("<============================== Formated response by AI ==============================> \n", response)
-        return parseToolCalls(response)
+
+        return parseToolCalls(response);
       }
     }
-} catch(err){
-    console.log("we have an error : ", err)
+  } catch (err) {
+    console.log("we have an error : ", err);
   }
 }
