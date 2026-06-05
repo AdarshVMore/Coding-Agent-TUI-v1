@@ -1,8 +1,6 @@
 import { Command } from "commander";
-import { GoogleGenAI } from "@google/genai";
 import db from "../prisma-init/prismaIndex";
 import { toolFunctionCallLoop } from "../agent/toolCallLoop";
-import tools from "../agent/tools.json";
 import { aiCall } from "../agent/aiCall";
 
 async function main() {}
@@ -18,8 +16,25 @@ export const agentCommand = new Command("agent")
       },
     });
 
-    const response:any = aiCall(prompt, data[0].apiKey)
-    toolFunctionCallLoop(response, data[0].apiKey );
+    const activeProvider = data[0];
+
+    if (!activeProvider?.apiKey) {
+      console.error("No active API key found. Run provider login/set-provider first.");
+      return;
+    }
+
+    const response = await aiCall(prompt, activeProvider.apiKey);
+
+    if (!response) {
+      console.error("The model did not return valid tool calls.");
+      return;
+    }
+
+    for(let singleResponse of response){
+      while(singleResponse.responseAcceptable === "no") {
+        await toolFunctionCallLoop(response, activeProvider.apiKey);
+      }
+    }
   });
 
 // read file  - done

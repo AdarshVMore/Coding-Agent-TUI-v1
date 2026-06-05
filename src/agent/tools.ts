@@ -1,23 +1,22 @@
 import { exec } from "child_process";
-import { execParams, summarizeParams, web_search } from "../types/index";
 
 export function bashExec(command: string, eventsString: string) {
   console.log("......" + eventsString);
-  try {
+  return new Promise<string>((resolve) => {
     exec(command, (error, stdout, stderr) => {
       if (error) {
-        console.error(`Execution error: ${error.message}`);
+        resolve(`Execution error: ${error.message}`);
         return;
       }
 
       if (stderr) {
-        console.error(`Standard error: ${stderr}`);
+        resolve(`Standard error: ${stderr}`);
         return;
       }
 
-      console.log();
+      resolve(stdout);
     });
-  } catch {}
+  });
 }
 
 export function summarize(content: string, eventsString: string) {

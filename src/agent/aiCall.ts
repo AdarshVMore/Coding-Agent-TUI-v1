@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import tools from "./tools.json"
+import { AgentLoopToolCall } from "../types";
 
 const sysPrompt = `You are an autonomous coding agent.
     
@@ -30,7 +31,7 @@ const sysPrompt = `You are an autonomous coding agent.
     11. Never return prose outside the JSON structure.
     
     ## Response Format
-    
+
     Return an array of tool calls.
     
     Schema:
@@ -108,6 +109,74 @@ const sysPrompt = `You are an autonomous coding agent.
     
     Now solve the user's request.`;
 
+function getJsonText(text: string) {
+  const trimmed = text.trim();
+
+  if (!trimmed.startsWith("```")) {
+    return trimmed;
+  }
+
+  return trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isToolCall(value: unknown): value is AgentLoopToolCall[number] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const toolName = value.toolName;
+  const responseAcceptable = value.responseAcceptable;
+  const inputs = value.inputs;
+
+  const hasValidInputs =
+    (toolName === "exec" &&
+      isRecord(inputs) &&
+      typeof inputs.command === "string") ||
+    (toolName === "summarize" &&
+      isRecord(inputs) &&
+      typeof inputs.content === "string") ||
+    (toolName === "web_search" &&
+      isRecord(inputs) &&
+      typeof inputs.query === "string") ||
+    (toolName === "edit" &&
+      isRecord(inputs) &&
+      typeof inputs.filePath === "string" &&
+      typeof inputs.edits === "string");
+
+  return (
+    (toolName === "exec" ||
+      toolName === "summarize" ||
+      toolName === "web_search" ||
+      toolName === "edit") &&
+    hasValidInputs &&
+    (responseAcceptable === "yes" || responseAcceptable === "no") &&
+    typeof value.runningEvent === "string" &&
+    typeof value.response === "string"
+  );
+}
+
+function parseToolCalls(text: string): AgentLoopToolCall | undefined {
+  try {
+    const parsed: unknown = JSON.parse(getJsonText(text));
+
+    if (!Array.isArray(parsed) || !parsed.every(isToolCall)) {
+      console.error("AI response JSON did not match the tool-call schema:", parsed);
+      return;
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error("Could not parse AI response as JSON:", error);
+  }
+}
+
 export async function aiCall(prompt: string, apiKey: string) {
   // actual params needed => provider:string, model:string, apiKey:string
   try{console.log("================================================ calling gemini with given prompt =================================================== \n", prompt)
@@ -137,7 +206,7 @@ export async function aiCall(prompt: string, apiKey: string) {
           return;
         }
         console.log("<============================== Formated response by AI ==============================> \n", response)
-        return response
+        return parseToolCalls(response)
       }
     }
 } catch(err){

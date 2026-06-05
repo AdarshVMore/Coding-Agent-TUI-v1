@@ -1,27 +1,32 @@
-import type {
-  AgentLoopToolCall,
-} from "../types/index.js";
+import type { AgentLoopToolCall } from "../types/index.js";
 import { aiCall } from "./aiCall.js";
 import { bashExec, summarize, webSearch, editFile } from "./tools.js";
 
-const toolsDir:any = {
-  exec: (input: { command: string }, eventString:string) => bashExec(input.command, eventString),
-  summarize: (input: { content: string}, eventString:string) => summarize(input.content, eventString),
-  web_search: (input: { query: string}, eventString:string) => webSearch(input.query, eventString),
-  edit: (input: { filePath: string; edits: string}, eventString:string) =>
-    editFile(input.filePath, input.edits, eventString),
-};
+async function executeToolCall(singleToolCall: AgentLoopToolCall[number]) {
+  switch (singleToolCall.toolName) {
+    case "exec":
+      return bashExec(singleToolCall.inputs.command, singleToolCall.runningEvent);
+    case "summarize":
+      return summarize(singleToolCall.inputs.content, singleToolCall.runningEvent);
+    case "web_search":
+      return webSearch(singleToolCall.inputs.query, singleToolCall.runningEvent);
+    case "edit":
+      return editFile(
+        singleToolCall.inputs.filePath,
+        singleToolCall.inputs.edits,
+        singleToolCall.runningEvent,
+      );
+  }
+}
 
-export async function toolFunctionCallLoop(response: AgentLoopToolCall, apiKey:string) {
-    console.log("starting tool loop... \n\n\n", response)
-  let finalResponse
+export async function toolFunctionCallLoop(response: AgentLoopToolCall, apiKey: string) {
+  let finalResponse;
   for (let singleToolCall of response) {
-    if(singleToolCall.responseAcceptable === "yes"){
-        console.log("calling tool : ", singleToolCall.toolName )
-        const currentRes = await toolsDir[singleToolCall.toolName](singleToolCall.inputs, singleToolCall.runningEvent)
-        finalResponse = aiCall(currentRes,apiKey)
+    if (singleToolCall.responseAcceptable === "no") {
+      const currentRes = await executeToolCall(singleToolCall);
+      finalResponse = await aiCall(`${singleToolCall.response}\n\nTool output:\n${currentRes}`, apiKey);
     }
   }
-  console.log(finalResponse)
+  console.log(finalResponse);
 }
 // this syntax in interesting => an object of key:string and value:function => function having [params] and in execution it executes another function based on that params
