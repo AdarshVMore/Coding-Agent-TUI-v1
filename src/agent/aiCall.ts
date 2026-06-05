@@ -2,68 +2,33 @@ import { GoogleGenAI } from "@google/genai";
 import tools from "./tools.json";
 import { AgentLoopToolCall } from "../types";
 
-const sysPrompt = `You are an autonomous coding agent.
-    
-    Your job is to solve the user's request by choosing the correct tools and using them step by step.
-    
+const sysPrompt = `Your job is to solve the user's request by choosing the correct tools and using them step by step.
     You have access to the following tools:
-    
     ${tools}    
 
-    ## Response Format
+    you are suppose to make 1 tool call at a time , 
+    based on userPrompt you are supposed to responsd in this format
+    [
+      {
+        toolName: //name of the tool that has to be executed now from available tools,
+        inputs: // inputs required to call that available tool,
+        responseAcceptable: // this field is supposed to judge the tool response, if the tool response if finally fulfilled the users request in its prompt answer it in "yes" or "no". with for response from AI the tools responseAcceptable will be "no" cause 
+        runningEvents: // current running process in a small 4 words
+        response": // final response will be here when responseAcceptable is true
+      }
+    ]
+    and that tool will send that toolcalls response with next prompt back to you along with main user prompt
 
-    Return an array of tool calls required for entire reequest has.
-    
-    Schema:
-    
-    [
-    {
-    "toolName": "tool_name",
-    "inputs": {},
-    "responseAcceptable": "yes" | "no",
-    "runningEvent": "short status message",
-    "response": "what should be sent back into the next tool call"
-    }
-    ]
-    
-    ### Field Definitions
-    
-    * toolName → exact tool name from the tool list.
-    * inputs → required parameters for the tool.
-    * responseAcceptable:
-    
-      * "yes" → if tool output is enough to respond to user
-      * "no" → if more agent loops are needed
-    * runningEvent → short UI-friendly status text.
-    * response → instruction for the next loop after tool execution.
-    
-    ## Examples
-    
-    ### Example 1: Read a file
-    
+    you are supposed to check if the toolCall's response sent to you is acceptable to the main userPrompt if it is then 
+
+    send a final response with responseAcceptable as "yes" and a response as the final response to display based on UserPrompt
+
+
+   
     User request:
-    "See what is inside index.ts"
+    Prompt 1: "Summarize the code present in file src/index.ts"
     
-    Response:
-    
-    [
-    {
-    "toolName": "exec",
-    "inputs": {
-    "command": "cat src/index.ts"
-    },
-    "responseAcceptable": "no",
-    "runningEvent": "Reading src/index.ts",
-    "response": "Analyze the file contents and determine next steps."
-    }
-    ]
-    
-    ### Example 2: Summarize a file
-    
-    User request:
-    "Summarize the code present in file src/index.ts"
-    
-    Response:
+    Response 1:
     
     [
         {
@@ -72,23 +37,13 @@ const sysPrompt = `You are an autonomous coding agent.
                 "command": "cat src/index.ts"
             },
             "responseAcceptable": "no",
-                "runningEvent": "Reading file before editing",
-            "response": "here is the content in the file {} summarize it"
-        },
-        {
-            "toolName": "summarize",
-            "inputs": {
-                "content": "summarize this content"
-            },
-            "responseAcceptable": "yes",
-            "runningEvent": "Applying file edits",
-            "response": "Summarized content"
+            "runningEvent": "Reading file before editing",
+            "response": ""
         }
     ]
 
     After every loop or an AI Call check which response is acceptable and in next response mark that tools responseAcceptable as "yes"
-    
-Now solve the user's request.`;
+    `;
 
 function getJsonText(text: string) {
   const trimmed = text.trim();
@@ -138,8 +93,7 @@ function isToolCall(value: unknown): value is AgentLoopToolCall[number] {
       toolName === "edit") &&
     hasValidInputs &&
     (responseAcceptable === "yes" || responseAcceptable === "no") &&
-    typeof value.runningEvent === "string" &&
-    typeof value.response === "string"
+    typeof value.runningEvent === "string"
   );
 }
 
@@ -163,6 +117,7 @@ function parseToolCalls(text: string): AgentLoopToolCall | undefined {
 
 export async function aiCall(prompt: string, apiKey: string) {
   // actual params needed => provider:string, model:string, apiKey:string
+  console.log("prompt ===> ", prompt);
   try {
     const ai = new GoogleGenAI({ apiKey: apiKey });
     const response = await ai.models.generateContent({
@@ -189,7 +144,7 @@ export async function aiCall(prompt: string, apiKey: string) {
         if (!response) {
           return;
         }
-
+        console.log(parseToolCalls(response))
         return parseToolCalls(response);
       }
     }

@@ -31,18 +31,17 @@ async function executeToolCall(singleToolCall: AgentLoopToolCall[number]) {
 export async function toolFunctionCallLoop(
   response: AgentLoopToolCall,
   apiKey: string,
+  userPrompt:string
 ) {
   let finalResponse;
   for (let singleToolCall of response) {
     if (singleToolCall.responseAcceptable === "no") {
       const currentRes = await executeToolCall(singleToolCall);
       finalResponse = await aiCall(
-        `${singleToolCall.response}\n\nTool output:\n${currentRes}`,
+        `Tool output:\n${currentRes} UserPrompt:\n${userPrompt}`,
         apiKey,
       );
     }
   }
-
-  console.log(finalResponse);
 }
 // this syntax in interesting => an object of key:string and value:function => function having [params] and in execution it executes another function based on that params

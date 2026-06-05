@@ -24,6 +24,7 @@ export const agentCommand = new Command("agent")
     }
 
     const response = await aiCall(prompt, activeProvider.apiKey);
+    console.log("res in agent.ts \n\n\n\n\n", response)
 
     if (!response) {
       console.error("The model did not return valid tool calls.");
@@ -32,7 +33,11 @@ export const agentCommand = new Command("agent")
 
     for(let singleResponse of response){
       while(singleResponse.responseAcceptable === "no") {
-        await toolFunctionCallLoop(response, activeProvider.apiKey);
+        await toolFunctionCallLoop(response, activeProvider.apiKey, prompt);
+      }
+      if(singleResponse.responseAcceptable === "yes") {
+        console.log(singleResponse.response)
+        return
       }
     }
   });
@@ -55,3 +60,7 @@ export const agentCommand = new Command("agent")
 // if API_KEY ? select Model / auto-select , else enter API KEY ,
 // start AgentLoop [give streams of response with "runningEvent"]
 // 2. spawns a docker continer with KVM + Quemu to create a Sandbox for some execution of tasks provided
+
+
+// some error we are facing => infinite loop
+// whats happening ? => AI
