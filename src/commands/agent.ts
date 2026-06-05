@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import db from "../prisma-init/prismaIndex";
 import { toolFunctionCallLoop } from "../agent/toolCallLoop";
 import tools from "../agent/tools.json";
+import { aiCall } from "../agent/aiCall";
 
 async function main() {}
 
@@ -17,35 +18,8 @@ export const agentCommand = new Command("agent")
       },
     });
 
-    const ai = new GoogleGenAI({ apiKey: data[0].apiKey });
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        systemInstruction:
-          "these are the tools we have: {} , respond with the set of tools we need to use in an object [{toolName: exec, inputs: {command: cat src/indes.ts} , responseAcceptable: yes, runningEvent:...running terminal command to read file, response://prompt again to the loop}, {toolName: summarize, inputs:{content: ----}, responseAcceptable: yes, runningEvent:...running terminal command to read file, response: //prompt again to the loop }]",
-      },
-    });
-
-    const texts = response.candidates;
-
-    if (!texts) {
-      return;
-    }
-
-    for (let text of texts) {
-      const content = text.content?.parts;
-      if (!content) {
-        return;
-      }
-      for (let part of content) {
-        const response = part.text;
-        if (!response) {
-          return;
-        }
-        toolFunctionCallLoop(JSON.parse(response));
-      }
-    }
+    const response:any = aiCall(prompt, data[0].apiKey)
+    toolFunctionCallLoop(response, data[0].apiKey );
   });
 
 // read file  - done

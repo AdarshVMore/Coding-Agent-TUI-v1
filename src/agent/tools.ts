@@ -1,7 +1,8 @@
 import { exec } from "child_process";
+import { execParams, summarizeParams, web_search } from "../types/index";
 
-export function bashExec(command: string) {
-  console.log("ai returns this ====> \n", command);
+export function bashExec(command: string, eventsString: string) {
+  console.log("......" + eventsString);
   try {
     exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -14,19 +15,29 @@ export function bashExec(command: string) {
         return;
       }
 
-      console.log(`Output:\n${stdout}`);
+      console.log();
     });
   } catch {}
 }
 
-export function summarize(content:string){
-    return `summarize this content: \n ${content}`
+export function summarize(content: string, eventsString: string) {
+  console.log("......" + eventsString);
+
+  return `summarize this content: \n ${content}`;
 }
 
-export function webSearch(query:string){
-    // will integrate tavily api
+export function webSearch(query: string, eventsString: string) {
+  console.log("......" + eventsString);
+
+  // will integrate tavily api
 }
 
-export function editFile(filePath:string, edits:string){
-    // dont know how editing happens
+export function editFile(
+  filePath: string,
+  edits: string,
+  eventsString: string,
+) {
+  console.log("......" + eventsString);
+
+  // dont know how editing happens
 }
