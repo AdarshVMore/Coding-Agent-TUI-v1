@@ -2,29 +2,39 @@ import { GoogleGenAI } from "@google/genai";
 import tools from "./tools.json";
 import { AgentLoopToolCall } from "../types";
 
+const toolsText = JSON.stringify(tools, null, 2);
+
 const sysPrompt = `Your job is to solve the user's request by choosing the correct tools and using them step by step.
     You have access to the following tools:
-    ${tools}    
+    ${toolsText}    
 
-    you are suppose to make 1 tool call at a time , 
-    based on userPrompt you are supposed to responsd in this format
+    You are supposed to make 1 tool call at a time.
+    Always respond with valid JSON only. Do not wrap it in markdown.
+    Based on userPrompt you are supposed to respond in this format:
     [
       {
-        toolName: //name of the tool that has to be executed now from available tools,
-        inputs: // inputs required to call that available tool,
-        responseAcceptable: // this field is supposed to judge the tool response, if the tool response if finally fulfilled the users request in its prompt answer it in "yes" or "no". with for response from AI the tools responseAcceptable will be "no" cause 
-        runningEvents: // current running process in a small 4 words
-        response": // final response will be here when responseAcceptable is true
+        "toolName": "exec" | "web_search" | "edit" | "final",
+        "inputs": {},
+        "responseAcceptable": "yes" | "no",
+        "runningEvent": "current running process in a small 4 words",
+        "response": "final response when responseAcceptable is yes, otherwise empty string"
       }
     ]
-    and that tool will send that toolcalls response with next prompt back to you along with main user prompt
+    The tool runner will send the tool output back to you with the main user prompt.
+    Do not call a tool to summarize, explain, rewrite, or reason over text.
+    If the user asks for a summary and you already have the content, answer with toolName "final".
 
-    you are supposed to check if the toolCall's response sent to you is acceptable to the main userPrompt if it is then 
+    If the tool output is enough to answer the main user prompt, respond with:
+    [
+      {
+        "toolName": "final",
+        "inputs": {},
+        "responseAcceptable": "yes",
+        "runningEvent": "Done",
+        "response": "the final answer to show the user"
+      }
+    ]
 
-    send a final response with responseAcceptable as "yes" and a response as the final response to display based on UserPrompt
-
-
-   
     User request:
     Prompt 1: "Summarize the code present in file src/index.ts"
     
@@ -42,7 +52,7 @@ const sysPrompt = `Your job is to solve the user's request by choosing the corre
         }
     ]
 
-    After every loop or an AI Call check which response is acceptable and in next response mark that tools responseAcceptable as "yes"
+    After every loop or AI call, check whether the latest tool output satisfies the original user prompt.
     `;
 
 function getJsonText(text: string) {
@@ -75,25 +85,24 @@ function isToolCall(value: unknown): value is AgentLoopToolCall[number] {
     (toolName === "exec" &&
       isRecord(inputs) &&
       typeof inputs.command === "string") ||
-    (toolName === "summarize" &&
-      isRecord(inputs) &&
-      typeof inputs.content === "string") ||
     (toolName === "web_search" &&
       isRecord(inputs) &&
       typeof inputs.query === "string") ||
     (toolName === "edit" &&
       isRecord(inputs) &&
       typeof inputs.filePath === "string" &&
-      typeof inputs.edits === "string");
+      typeof inputs.edits === "string") ||
+    (toolName === "final" && isRecord(inputs));
 
   return (
     (toolName === "exec" ||
-      toolName === "summarize" ||
       toolName === "web_search" ||
-      toolName === "edit") &&
+      toolName === "edit" ||
+      toolName === "final") &&
     hasValidInputs &&
     (responseAcceptable === "yes" || responseAcceptable === "no") &&
-    typeof value.runningEvent === "string"
+    typeof value.runningEvent === "string" &&
+    typeof value.response === "string"
   );
 }
 
@@ -122,7 +131,7 @@ export async function aiCall(prompt: string, apiKey: string) {
     const ai = new GoogleGenAI({ apiKey: apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: `these are all the tool we have: ${tools}, ${prompt}`,
+      contents: `These are all the tools we have:\n${toolsText}\n\n${prompt}`,
       config: {
         systemInstruction: sysPrompt,
       },
@@ -144,7 +153,6 @@ export async function aiCall(prompt: string, apiKey: string) {
         if (!response) {
           return;
         }
-        console.log(parseToolCalls(response))
         return parseToolCalls(response);
       }
     }

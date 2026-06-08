@@ -24,16 +24,16 @@ export type singleReponseFormatForToolCall =
       inputs: execParams;
     })
   | (baseToolCall & {
-      toolName: "summarize";
-      inputs: summarizeParams;
-    })
-  | (baseToolCall & {
       toolName: "web_search";
       inputs: web_search;
     })
   | (baseToolCall & {
       toolName: "edit";
       inputs: editParams;
+    })
+  | (baseToolCall & {
+      toolName: "final";
+      inputs: Record<string, never>;
     });
 
 export type AgentLoopToolCall = singleReponseFormatForToolCall[];

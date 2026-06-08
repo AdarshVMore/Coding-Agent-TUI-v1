@@ -23,7 +23,7 @@ export const agentCommand = new Command("agent")
       return;
     }
 
-    const response = await aiCall(prompt, activeProvider.apiKey);
+    let response = await aiCall(prompt, activeProvider.apiKey);
     console.log("res in agent.ts \n\n\n\n\n", response)
 
     if (!response) {
@@ -31,15 +31,33 @@ export const agentCommand = new Command("agent")
       return;
     }
 
-    for(let singleResponse of response){
-      while(singleResponse.responseAcceptable === "no") {
-        await toolFunctionCallLoop(response, activeProvider.apiKey, prompt);
+    const maxIterations = 10;
+
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      const finalResponse = response.find(
+        (singleResponse) => singleResponse.responseAcceptable === "yes",
+      );
+
+      if (finalResponse) {
+        console.log(finalResponse.response);
+        return;
       }
-      if(singleResponse.responseAcceptable === "yes") {
-        console.log(singleResponse.response)
-        return
+
+      const nextResponse = await toolFunctionCallLoop(
+        response,
+        activeProvider.apiKey,
+        prompt,
+      );
+
+      if (!nextResponse) {
+        console.error("The model did not return valid tool calls.");
+        return;
       }
+
+      response = nextResponse;
     }
+
+    console.error("Agent stopped after reaching the maximum loop count.");
   });
 
 // read file  - done

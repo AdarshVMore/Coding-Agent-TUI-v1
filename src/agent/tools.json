@@ -1,28 +1,21 @@
 {
   "availableTools": [
     {
-      "name": "bashExec",
+      "name": "exec",
       "description": "Execute terminal commands",
       "parameters": {
         "command": "string"
       }
     },
     {
-      "name": "summarize",
-      "description": "Summarize text content",
-      "parameters": {
-        "content": "string"
-      }
-    },
-    {
-      "name": "webSearch",
+      "name": "web_search",
       "description": "Search the web for external information",
       "parameters": {
         "query": "string"
       }
     },
     {
-      "name": "editFile",
+      "name": "edit",
       "description": "Edit a file",
       "parameters": {
         "filePath": "string",

@@ -1,17 +1,12 @@
 import type { AgentLoopToolCall } from "../types/index.js";
 import { aiCall } from "./aiCall.js";
-import { bashExec, summarize, webSearch, editFile } from "./tools.js";
+import { bashExec, webSearch, editFile } from "./tools.js";
 
 async function executeToolCall(singleToolCall: AgentLoopToolCall[number]) {
   switch (singleToolCall.toolName) {
     case "exec":
       return bashExec(
         singleToolCall.inputs.command,
-        singleToolCall.runningEvent,
-      );
-    case "summarize":
-      return summarize(
-        singleToolCall.inputs.content,
         singleToolCall.runningEvent,
       );
     case "web_search":
@@ -25,6 +20,8 @@ async function executeToolCall(singleToolCall: AgentLoopToolCall[number]) {
         singleToolCall.inputs.edits,
         singleToolCall.runningEvent,
       );
+    case "final":
+      return singleToolCall.response;
   }
 }
 
@@ -33,15 +30,20 @@ export async function toolFunctionCallLoop(
   apiKey: string,
   userPrompt:string
 ) {
-  let finalResponse;
   for (let singleToolCall of response) {
+    if (singleToolCall.responseAcceptable === "yes") {
+      return response;
+    }
+
     if (singleToolCall.responseAcceptable === "no") {
       const currentRes = await executeToolCall(singleToolCall);
-      finalResponse = await aiCall(
-        `Tool output:\n${currentRes} UserPrompt:\n${userPrompt}`,
+      return aiCall(
+        `Original user prompt:\n${userPrompt}\n\nLatest tool output:\n${currentRes}`,
         apiKey,
       );
     }
   }
 }
-// this syntax in interesting => an object of key:string and value:function => function having [params] and in execution it executes another function based on that params
+
+// guard rails
+// context managment
