@@ -1,9 +1,6 @@
 export type execParams = {
     command: string
 }
-export type summarizeParams = {
-    content: string
-}
 export type web_search = {
     query: string
 }

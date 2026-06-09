@@ -13,7 +13,7 @@ const sysPrompt = `Your job is to solve the user's request by choosing the corre
     Based on userPrompt you are supposed to respond in this format:
     [
       {
-        "toolName": "exec" | "web_search" | "edit" | "final",
+        "toolName": "exec" | "final",
         "inputs": {},
         "responseAcceptable": "yes" | "no",
         "runningEvent": "current running process in a small 4 words",
@@ -126,7 +126,6 @@ function parseToolCalls(text: string): AgentLoopToolCall | undefined {
 
 export async function aiCall(prompt: string, apiKey: string) {
   // actual params needed => provider:string, model:string, apiKey:string
-  console.log("prompt ===> ", prompt);
   try {
     const ai = new GoogleGenAI({ apiKey: apiKey });
     const response = await ai.models.generateContent({

@@ -24,14 +24,13 @@ export const agentCommand = new Command("agent")
     }
 
     let response = await aiCall(prompt, activeProvider.apiKey);
-    console.log("res in agent.ts \n\n\n\n\n", response)
 
     if (!response) {
       console.error("The model did not return valid tool calls.");
       return;
     }
 
-    const maxIterations = 10;
+    const maxIterations = 100;
 
     for (let iteration = 0; iteration < maxIterations; iteration++) {
       const finalResponse = response.find(

@@ -6,21 +6,6 @@
       "parameters": {
         "command": "string"
       }
-    },
-    {
-      "name": "web_search",
-      "description": "Search the web for external information",
-      "parameters": {
-        "query": "string"
-      }
-    },
-    {
-      "name": "edit",
-      "description": "Edit a file",
-      "parameters": {
-        "filePath": "string",
-        "edits": "string"
-      }
     }
   ],
   "instructions": {

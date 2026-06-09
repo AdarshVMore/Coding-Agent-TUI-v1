@@ -2,6 +2,7 @@ import { exec } from "child_process";
 
 export function bashExec(command: string, eventsString: string) {
   console.log("......" + eventsString);
+  console.log("<======== Command is =========> \n", command)
   return new Promise<string>((resolve) => {
     exec(command, (error, stdout, stderr) => {
       if (error) {
